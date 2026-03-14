@@ -75,10 +75,10 @@ const ACTIVITY_META: Record<
 };
 
 const SOCIAL_APPS = [
-  { name: "Instagram", color: "bg-pink-500", icon: "📸" },
-  { name: "TikTok", color: "bg-[#69C9D0]", icon: "🎵" },
-  { name: "Twitter / X", color: "bg-[#1D9BF0]", icon: "🐦" },
-  { name: "YouTube", color: "bg-red-500", icon: "▶️" },
+  { name: "Instagram", icon: "📸", share: 0.35 },
+  { name: "TikTok",    icon: "🎵", share: 0.30 },
+  { name: "Twitter",   icon: "🐦", share: 0.20 },
+  { name: "YouTube",   icon: "▶️", share: 0.15 },
 ];
 
 const MOCK_EVENTS: Event[] = [
@@ -197,6 +197,50 @@ function NotificationToast({
         <span className="text-violet-300 font-medium">{friends[0]}</span> was
         notified to check in on you!
       </p>
+    </motion.div>
+  );
+}
+
+const WIN_MESSAGES = [
+  "You're crushing it today! 👊",
+  "That's the spirit, keep going!",
+  "So proud of you right now!",
+  "You beat the scroll — legend!",
+];
+
+function WinningToast({
+  friendName,
+  friendAvatar,
+  avatarGradient,
+  onClose,
+}: {
+  friendName: string;
+  friendAvatar: string;
+  avatarGradient: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 5000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  const message = WIN_MESSAGES[Math.floor(Date.now() / 1000) % WIN_MESSAGES.length];
+
+  return (
+    <motion.div
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -80, opacity: 0 }}
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#0d1f14] border border-emerald-500/30 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-2xl shadow-emerald-900/30 min-w-72 max-w-xs"
+    >
+      <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${avatarGradient} flex items-center justify-center text-xs font-bold text-white shrink-0`}>
+        {friendAvatar}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-emerald-400 font-medium">{friendName}</p>
+        <p className="text-sm text-white leading-snug">{message}</p>
+      </div>
+      <span className="text-xl shrink-0">👍</span>
     </motion.div>
   );
 }
@@ -406,16 +450,31 @@ export default function Dashboard() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastFriends, setToastFriends] = useState<string[]>([]);
+  const [showWinToast, setShowWinToast] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [activeTimer, setActiveTimer] = useState<Activity | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [completedActivities, setCompletedActivities] = useState<Partial<Record<Activity, number>>>({});
   const simulateRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevOverLimitRef = useRef<boolean>(false);
 
+  // Total minutes logged across all activities (tap-to-add + real timer)
+  const totalActivityDone = Object.values(completedActivities).reduce((s, v) => s + (v ?? 0), 0);
+
+  // Social media time is always the raw truth — activity boosts the score instead
   const suggestions = getSuggestions(socialMediaMinutes, selectedActivities);
   const overLimit = socialMediaMinutes > DAILY_LIMIT;
   const excess = Math.max(0, socialMediaMinutes - DAILY_LIMIT);
+
+  // Activity compensates excess for scoring purposes only
+  const effectiveExcess = Math.max(0, excess - totalActivityDone);
+
+  // Win = activity fully compensated the excess (or never went over)
+  const isWinning = effectiveExcess <= 0;
+
+  // Score reflects activity compensation — you scrolled, but you fought back
+  const overallScore = Math.max(0, 100 - Math.floor((effectiveExcess / DAILY_LIMIT) * 100));
 
   const notifyFriends = (minutes: number) => {
     if (minutes > DAILY_LIMIT + 15 && selectedFriends.length > 0) {
@@ -450,7 +509,7 @@ export default function Dashboard() {
   const resetUsage = () => {
     if (simulateRef.current) clearInterval(simulateRef.current);
     setIsSimulating(false);
-    setSocialMediaMinutes(45);
+    setSocialMediaMinutes(28);
   };
 
   // Activity timer
@@ -480,6 +539,14 @@ export default function Dashboard() {
     }, 1000);
   };
 
+  // Fire winning toast when we cross from losing → winning (activity compensated the excess)
+  useEffect(() => {
+    if (!prevOverLimitRef.current && isWinning && totalActivityDone > 0 && selectedFriends.length > 0) {
+      setShowWinToast(true);
+    }
+    prevOverLimitRef.current = !isWinning;
+  }, [isWinning, totalActivityDone, selectedFriends]);
+
   useEffect(() => {
     return () => {
       if (simulateRef.current) clearInterval(simulateRef.current);
@@ -491,14 +558,22 @@ export default function Dashboard() {
     selectedActivities.includes(e.type)
   );
 
-  const overallScore = Math.max(
-    0,
-    100 - Math.floor(((socialMediaMinutes - DAILY_LIMIT) / DAILY_LIMIT) * 100)
-  );
-
   return (
     <div className="min-h-dvh pb-12">
       <AnimatePresence>
+        {showWinToast && (() => {
+          const friend = FRIENDS.find((f) => f.id === selectedFriends[0]);
+          if (!friend) return null;
+          return (
+            <WinningToast
+              key="win-toast"
+              friendName={friend.name}
+              friendAvatar={friend.avatar}
+              avatarGradient={AVATAR_COLORS[friend.id]}
+              onClose={() => setShowWinToast(false)}
+            />
+          );
+        })()}
         {showToast && (
           <NotificationToast
             friends={toastFriends}
@@ -598,23 +673,22 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-end justify-between mb-3">
-            <div>
-              <span className="text-4xl font-bold text-white">
-                {socialMediaMinutes}
-              </span>
-              <span className="text-[#a0a0b8] text-lg ml-1">min</span>
+            <div className="flex items-end gap-2">
+              <span className="text-4xl font-bold text-white">{socialMediaMinutes}</span>
+              <span className="text-[#a0a0b8] text-lg ml-0.5">min</span>
             </div>
             <div className="text-right">
-              <p
-                className={`text-sm font-medium ${overLimit ? "text-red-400" : "text-emerald-400"}`}
-              >
+              <p className={`text-sm font-medium ${overLimit ? "text-red-400" : "text-emerald-400"}`}>
                 {overLimit ? `+${excess}m over limit` : "Within limit"}
               </p>
+              {totalActivityDone > 0 && (
+                <p className="text-emerald-400 text-xs">+{totalActivityDone}m activity logged</p>
+              )}
               <p className="text-[#606078] text-xs">Daily goal: {DAILY_LIMIT}m</p>
             </div>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress bar — always shows real social media usage */}
           <div className="h-2.5 bg-white/8 rounded-full overflow-hidden">
             <motion.div
               animate={{ width: `${Math.min(100, (socialMediaMinutes / 180) * 100)}%` }}
@@ -630,19 +704,26 @@ export default function Dashboard() {
           {/* App breakdown */}
           <div className="grid grid-cols-4 gap-2 mt-4">
             {SOCIAL_APPS.map((app) => {
-              const appMin = Math.floor((socialMediaMinutes / 4) + Math.random() * 5);
+              const appMin = Math.round(socialMediaMinutes * app.share);
               return (
                 <div key={app.name} className="text-center">
                   <div className="text-lg mb-0.5">{app.icon}</div>
-                  <div className="text-white text-xs font-medium">{appMin}m</div>
-                  <div className="text-[#606078] text-xs truncate">{app.name.split(" ")[0]}</div>
+                  <motion.div
+                    key={appMin}
+                    initial={{ opacity: 0.4 }}
+                    animate={{ opacity: 1 }}
+                    className="text-white text-xs font-medium"
+                  >
+                    {appMin}m
+                  </motion.div>
+                  <div className="text-[#606078] text-xs truncate">{app.name}</div>
                 </div>
               );
             })}
           </div>
         </motion.div>
 
-        {/* Smart Suggestions */}
+        {/* Unscroll! */}
         {overLimit && selectedActivities.length > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
@@ -652,7 +733,7 @@ export default function Dashboard() {
             <SectionHeader>
               <span className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-400 inline" />
-                Smart Suggestions
+                Unscroll!
               </span>
             </SectionHeader>
             <div
@@ -670,7 +751,13 @@ export default function Dashboard() {
                   <motion.div
                     key={activity}
                     whileTap={{ scale: 0.97 }}
-                    className="bg-white/5 border border-white/8 rounded-3xl p-4 flex flex-col gap-3"
+                    onClick={() =>
+                      setCompletedActivities((prev) => ({
+                        ...prev,
+                        [activity]: (prev[activity] ?? 0) + 10,
+                      }))
+                    }
+                    className="bg-white/5 border border-white/8 rounded-3xl p-4 flex flex-col gap-3 cursor-pointer"
                   >
                     <div
                       className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center`}
@@ -697,7 +784,7 @@ export default function Dashboard() {
 
                     {/* Timer button */}
                     <button
-                      onClick={() => startTimer(activity)}
+                      onClick={(e) => { e.stopPropagation(); startTimer(activity); }}
                       className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition-all ${
                         isActive
                           ? `bg-gradient-to-r ${meta.gradient} text-white`
@@ -716,6 +803,7 @@ export default function Dashboard() {
                         </>
                       )}
                     </button>
+
                   </motion.div>
                 );
               })}
@@ -897,7 +985,7 @@ export default function Dashboard() {
               Focus History
             </span>
           </SectionHeader>
-          <FocusCalendar />
+          <FocusCalendar activityOffset={totalActivityDone} />
         </motion.div>
       </div>
     </div>

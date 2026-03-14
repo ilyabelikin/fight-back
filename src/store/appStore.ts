@@ -28,7 +28,7 @@ export const useAppStore = create<AppState>((set) => ({
   screenTimeGranted: false,
   selectedActivities: [],
   selectedFriends: [],
-  socialMediaMinutes: 45,
+  socialMediaMinutes: 28,
 
   setStep: (step) => set({ step }),
   grantScreenTime: () => set({ screenTimeGranted: true }),
