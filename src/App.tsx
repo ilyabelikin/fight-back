@@ -4,6 +4,7 @@ import Welcome from "./components/steps/Welcome";
 import ActivityPicker from "./components/steps/ActivityPicker";
 import FriendSelector from "./components/steps/FriendSelector";
 import Dashboard from "./components/steps/Dashboard";
+import AdPage from "./components/AdPage";
 
 const PAGE_VARIANTS = {
   initial: { opacity: 0, x: 40 },
@@ -13,6 +14,10 @@ const PAGE_VARIANTS = {
 
 export default function App() {
   const { step } = useAppStore();
+
+  if (window.location.pathname === "/ad") {
+    return <AdPage />;
+  }
 
   return (
     <div className="min-h-dvh bg-[#0a0a0f]">
