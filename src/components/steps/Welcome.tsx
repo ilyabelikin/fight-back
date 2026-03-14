@@ -43,8 +43,7 @@ export default function Welcome() {
             </span>
           </h1>
           <p className="text-[#a0a0b8] text-lg leading-relaxed">
-            Turn your screen time into an opportunity to build habits that
-            actually matter.
+            Turn your screen time into an opportunity to build healthy habits.
           </p>
         </div>
 
