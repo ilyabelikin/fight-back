@@ -5,7 +5,7 @@ import { useAppStore } from "../../store/appStore";
 const stats = [
   { icon: Clock, label: "Avg daily screen time", value: "4h 37m" },
   { icon: Smartphone, label: "Social media alone", value: "2h 24m" },
-  { icon: TrendingDown, label: "Productive time lost", value: "43%" },
+  { icon: TrendingDown, label: "Productive time lost", value: "12%" },
 ];
 
 export default function Welcome() {

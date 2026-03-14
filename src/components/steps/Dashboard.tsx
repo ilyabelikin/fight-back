@@ -366,7 +366,7 @@ function EventDetailSheet({
           {crewGoingFriends.length > 0 && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-[#606078] mb-3">
-                From your crew
+                Friends going
               </p>
               <div className="flex flex-col gap-2.5">
                 {crewGoingFriends.map((friend) => {
@@ -405,7 +405,7 @@ function EventDetailSheet({
                   {" "}
                   —{" "}
                   <span className="text-violet-300 font-medium">
-                    {crewGoingFriends.length} from your crew
+                    {crewGoingFriends.length} {crewGoingFriends.length === 1 ? "friend" : "friends"} going
                   </span>
                   {othersCount > 0 && `, ${othersCount} others`}
                 </>
@@ -509,7 +509,9 @@ export default function Dashboard() {
   const resetUsage = () => {
     if (simulateRef.current) clearInterval(simulateRef.current);
     setIsSimulating(false);
-    setSocialMediaMinutes(28);
+    setSocialMediaMinutes(38);
+    setShowToast(false);
+    setShowWinToast(false);
   };
 
   // Activity timer
@@ -873,46 +875,12 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Accountability */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="bg-white/5 border border-white/8 rounded-3xl p-5"
-        >
-          <SectionHeader>
-            <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-violet-400 inline" />
-              Your Crew
-            </span>
-          </SectionHeader>
-          <div className="flex flex-wrap gap-3">
-            {selectedFriends.map((id) => {
-              const friend = FRIENDS.find((f) => f.id === id);
-              if (!friend) return null;
-              return (
-                <div key={id} className="flex items-center gap-2">
-                  <div
-                    className={`w-8 h-8 rounded-xl bg-gradient-to-br ${AVATAR_COLORS[id]} flex items-center justify-center text-xs font-bold text-white`}
-                  >
-                    {friend.avatar}
-                  </div>
-                  <span className="text-sm text-[#a0a0b8]">{friend.name.split(" ")[0]}</span>
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-[#606078] text-xs mt-3">
-            They'll be notified if you scroll past your daily limit.
-          </p>
-        </motion.div>
-
         {/* Events */}
         {filteredEvents.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.35 }}
           >
             <SectionHeader>
               <span className="flex items-center gap-1.5">
@@ -946,7 +914,7 @@ export default function Dashboard() {
                         </p>
                         {crewCount > 0 && (
                           <span className="shrink-0 px-1.5 py-0.5 bg-violet-500/20 border border-violet-500/30 rounded-full text-violet-300 text-xs font-medium">
-                            {crewCount} crew
+                            {crewCount} {crewCount === 1 ? "friend" : "friends"} going
                           </span>
                         )}
                       </div>
@@ -972,6 +940,40 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+
+        {/* Accountability */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-white/5 border border-white/8 rounded-3xl p-5"
+        >
+          <SectionHeader>
+            <span className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-violet-400 inline" />
+              Your Crew
+            </span>
+          </SectionHeader>
+          <div className="flex flex-wrap gap-3">
+            {selectedFriends.map((id) => {
+              const friend = FRIENDS.find((f) => f.id === id);
+              if (!friend) return null;
+              return (
+                <div key={id} className="flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-xl bg-gradient-to-br ${AVATAR_COLORS[id]} flex items-center justify-center text-xs font-bold text-white`}
+                  >
+                    {friend.avatar}
+                  </div>
+                  <span className="text-sm text-[#a0a0b8]">{friend.name.split(" ")[0]}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[#606078] text-xs mt-3">
+            They'll be notified if you scroll past your daily limit.
+          </p>
+        </motion.div>
 
         {/* Focus History Calendar */}
         <motion.div

@@ -28,7 +28,7 @@ export const useAppStore = create<AppState>((set) => ({
   screenTimeGranted: false,
   selectedActivities: [],
   selectedFriends: [],
-  socialMediaMinutes: 28,
+  socialMediaMinutes: 38,
 
   setStep: (step) => set({ step }),
   grantScreenTime: () => set({ screenTimeGranted: true }),
@@ -49,11 +49,12 @@ export const useAppStore = create<AppState>((set) => ({
 
 export const FRIENDS: Friend[] = [
   { id: "1", name: "Alex Chen", avatar: "AC", status: "online" },
-  { id: "2", name: "Maria Silva", avatar: "MS", status: "online" },
   { id: "3", name: "Jake Torres", avatar: "JT", status: "busy" },
+  { id: "6", name: "Lena Müller", avatar: "LM", status: "offline" },
+  { id: "2", name: "Maria Silva", avatar: "MS", status: "online" },
+  { id: "7", name: "Michael Tam", avatar: "MT", status: "online" },
   { id: "4", name: "Priya Nair", avatar: "PN", status: "offline" },
   { id: "5", name: "Sam Wilson", avatar: "SW", status: "online" },
-  { id: "6", name: "Lena Müller", avatar: "LM", status: "offline" },
 ];
 
 export const AVATAR_COLORS: Record<string, string> = {
@@ -63,4 +64,5 @@ export const AVATAR_COLORS: Record<string, string> = {
   "4": "from-teal-500 to-cyan-600",
   "5": "from-blue-500 to-indigo-600",
   "6": "from-emerald-500 to-green-600",
+  "7": "from-sky-500 to-blue-600",
 };
