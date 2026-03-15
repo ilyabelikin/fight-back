@@ -1,73 +1,37 @@
-# React + TypeScript + Vite
+# UnScroll
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Help people offset social media usage with healthy habits.
 
-Currently, two official plugins are available:
+A prototype created for [Global Service Jam 2026](https://globalservicejam.org).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+UnScroll is a mobile-first accountability app that tracks your daily social media screen time and nudges you to replace scrolling with meaningful activities — running, reading, or meditation.
 
-## React Compiler
+## How it works
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Grant screen time access** — UnScroll reads your social media usage. All data stays on-device.
+2. **Pick your counter-habits** — Choose from running, reading, or meditation as your healthy offsets.
+3. **Add accountability friends** — Select friends already on UnScroll to keep each other honest. They get a gentle ping when you've been scrolling too long.
+4. **Fight back on the dashboard** — Watch your usage in real time, hit your daily activity targets, and earn your Focus Score back.
 
-## Expanding the ESLint configuration
+## Key behaviours
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Activity suggestions kick in after **60 minutes** of social media use.
+- Friends are notified when you cross **100 minutes**.
+- Suggested activity time is **1.5× your excess** scroll time — so 30 extra minutes of scrolling means 45 minutes of activity to offset it.
+- A **daily pick** (one activity, 15 min) is always shown even before you go over the limit.
+- Promoted events from partners like Nike, lululemon, and Kindle surface real-world activities nearby.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Tech stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- React 19 + TypeScript
+- Vite
+- Zustand (state management)
+- Framer Motion (animations)
+- Tailwind CSS v4
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Getting started
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
