@@ -7,6 +7,9 @@ export interface Friend {
   name: string;
   avatar: string;
   status: "online" | "offline" | "busy";
+  onApp: boolean;
+  activities?: Activity[];
+  avgOffsetMinutes?: number; // average daily minutes saved from social media
 }
 
 export interface AppState {
@@ -48,13 +51,74 @@ export const useAppStore = create<AppState>((set) => ({
 }));
 
 export const FRIENDS: Friend[] = [
-  { id: "1", name: "Alex Chen", avatar: "AC", status: "online" },
-  { id: "3", name: "Jake Torres", avatar: "JT", status: "busy" },
-  { id: "6", name: "Lena Müller", avatar: "LM", status: "offline" },
-  { id: "2", name: "Maria Silva", avatar: "MS", status: "online" },
-  { id: "7", name: "Michael Tam", avatar: "MT", status: "online" },
-  { id: "4", name: "Priya Nair", avatar: "PN", status: "offline" },
-  { id: "5", name: "Sam Wilson", avatar: "SW", status: "online" },
+  {
+    id: "1",
+    name: "Alex Chen",
+    avatar: "AC",
+    status: "online",
+    onApp: true,
+    activities: ["running", "reading"],
+    avgOffsetMinutes: 42,
+  },
+  {
+    id: "6",
+    name: "Lena Müller",
+    avatar: "LM",
+    status: "offline",
+    onApp: false,
+  },
+  {
+    id: "8",
+    name: "Sertaç Mustafaoglu",
+    avatar: "SM",
+    status: "online",
+    onApp: true,
+    activities: ["meditating"],
+    avgOffsetMinutes: 48,
+  },
+  {
+    id: "4",
+    name: "Priya Nair",
+    avatar: "PN",
+    status: "offline",
+    onApp: false,
+  },
+  {
+    id: "2",
+    name: "Maria Silva",
+    avatar: "MS",
+    status: "online",
+    onApp: true,
+    activities: ["meditating"],
+    avgOffsetMinutes: 28,
+  },
+  {
+    id: "7",
+    name: "Michael Tam",
+    avatar: "MT",
+    status: "online",
+    onApp: true,
+    activities: ["running"],
+    avgOffsetMinutes: 55,
+  },
+  {
+    id: "3",
+    name: "Jake Torres",
+    avatar: "JT",
+    status: "busy",
+    onApp: true,
+    activities: ["running"],
+    avgOffsetMinutes: 67,
+  },
+  {
+    id: "5",
+    name: "Sam Wilson",
+    avatar: "SW",
+    status: "online",
+    onApp: true,
+    activities: ["reading"],
+    avgOffsetMinutes: 35,
+  },
 ];
 
 export const AVATAR_COLORS: Record<string, string> = {
@@ -65,4 +129,5 @@ export const AVATAR_COLORS: Record<string, string> = {
   "5": "from-blue-500 to-indigo-600",
   "6": "from-emerald-500 to-green-600",
   "7": "from-sky-500 to-blue-600",
+  "8": "from-red-500 to-orange-600",
 };

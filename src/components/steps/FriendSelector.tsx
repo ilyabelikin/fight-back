@@ -1,11 +1,25 @@
 import { motion } from "framer-motion";
-import { Bell, CheckCircle2, ChevronRight, Users } from "lucide-react";
+import { Bell, BookOpen, Brain, CheckCircle2, ChevronRight, PersonStanding, Users } from "lucide-react";
 import { AVATAR_COLORS, FRIENDS, useAppStore } from "../../store/appStore";
+import type { Activity } from "../../store/appStore";
+import { ElementType } from "react";
 
 const statusColors = {
   online: "bg-emerald-400",
   busy: "bg-amber-400",
   offline: "bg-[#404058]",
+};
+
+const statusLabel = {
+  online: "Online",
+  busy: "Busy",
+  offline: "Offline",
+};
+
+const ACTIVITY_META: Record<Activity, { icon: ElementType; label: string; color: string }> = {
+  running:    { icon: PersonStanding, label: "Running",    color: "text-orange-400" },
+  reading:    { icon: BookOpen,       label: "Reading",    color: "text-blue-400"   },
+  meditating: { icon: Brain,          label: "Meditation", color: "text-emerald-400" },
 };
 
 export default function FriendSelector() {
@@ -71,11 +85,46 @@ export default function FriendSelector() {
                 </div>
 
                 {/* Info */}
-                <div className="flex-1">
-                  <p className="font-semibold text-white">{friend.name}</p>
-                  <p className="text-sm capitalize text-[#707088]">
-                    {friend.status}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-white truncate">{friend.name}</p>
+                    {friend.onApp && (
+                      <span className="shrink-0 px-1.5 py-0.5 bg-violet-500/20 border border-violet-500/30 rounded-full text-violet-300 text-[10px] font-semibold tracking-wide uppercase">
+                        On app
+                      </span>
+                    )}
+                  </div>
+
+                  {friend.onApp && friend.activities && friend.activities.length > 0 ? (
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {/* Activity pills */}
+                      <div className="flex items-center gap-1.5">
+                        {friend.activities.map((act) => {
+                          const meta = ACTIVITY_META[act];
+                          const Icon = meta.icon;
+                          return (
+                            <span key={act} className={`flex items-center gap-1 text-xs font-medium ${meta.color}`}>
+                              <Icon className="w-3 h-3" strokeWidth={1.5} />
+                              {meta.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                      {/* Separator */}
+                      {friend.avgOffsetMinutes !== undefined && (
+                        <>
+                          <span className="text-[#404058] text-xs">·</span>
+                          <span className="text-xs text-[#707088]">
+                            unscrolls ~<span className="text-white font-medium">{friend.avgOffsetMinutes}</span> min/day
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#707088] mt-0.5">
+                      {statusLabel[friend.status]}{!friend.onApp && " · Not on UnScroll yet"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Check */}

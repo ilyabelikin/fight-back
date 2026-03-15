@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,6 +28,12 @@ import FocusCalendar from "../ui/FocusCalendar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface EventSponsored {
+  brand: string;
+  tagline: string;
+  ctaLabel: string;
+}
+
 interface Event {
   id: string;
   title: string;
@@ -41,11 +47,13 @@ interface Event {
   description: string;
   friendsGoing: string[]; // friend IDs
   rsvped: boolean;
+  sponsored?: EventSponsored;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAILY_LIMIT = 60; // minutes considered "healthy"
+const ACTIVITY_THRESHOLD = 60;  // minutes before activity suggestions kick in
+const NOTIFY_THRESHOLD = 100;   // minutes before friends are notified
 
 const ACTIVITY_META: Record<
   Activity,
@@ -82,6 +90,66 @@ const SOCIAL_APPS = [
 ];
 
 const MOCK_EVENTS: Event[] = [
+  {
+    id: "s1",
+    title: "Nike Run Club 5K",
+    type: "running",
+    location: "Central Park, NYC",
+    address: "Tavern on the Green, Central Park, New York, NY 10023",
+    time: "Tomorrow 6:30 AM",
+    duration: "40 min",
+    attendees: 128,
+    distance: "0.3 mi",
+    description:
+      "Run with NYC's fastest community. Pacers for every level — from first-timers to sub-20 regulars. Free Nike gear raffle for finishers. Hydration stations every km.",
+    friendsGoing: ["1", "3", "7"],
+    rsvped: false,
+    sponsored: {
+      brand: "Nike",
+      tagline: "Just Do It.",
+      ctaLabel: "Shop Nike Running",
+    },
+  },
+  {
+    id: "s2",
+    title: "lululemon Mindful Reset",
+    type: "meditating",
+    location: "Bryant Park, NYC",
+    address: "Bryant Park, 42nd St & 6th Ave, New York, NY 10018",
+    time: "Sat 8:00 AM",
+    duration: "45 min",
+    attendees: 64,
+    distance: "0.7 mi",
+    description:
+      "A guided breathwork and body-scan session led by lululemon ambassadors. Mats provided. Come as you are — no experience needed. End with a complimentary matcha.",
+    friendsGoing: ["2", "4"],
+    rsvped: false,
+    sponsored: {
+      brand: "lululemon",
+      tagline: "Sweat. Grow. Connect.",
+      ctaLabel: "Explore lululemon",
+    },
+  },
+  {
+    id: "s3",
+    title: "Kindle Reading Hour",
+    type: "reading",
+    location: "New York Public Library",
+    address: "476 5th Ave, New York, NY 10018",
+    time: "Sun 11:00 AM",
+    duration: "60 min",
+    attendees: 40,
+    distance: "0.6 mi",
+    description:
+      "Unplug and sink into your next great read. Kindle devices available to try. Curated book recommendations from Kindle editors, plus a group discussion to close out the hour.",
+    friendsGoing: ["2", "5"],
+    rsvped: false,
+    sponsored: {
+      brand: "Kindle",
+      tagline: "Read More. Scroll Less.",
+      ctaLabel: "Browse Kindle Store",
+    },
+  },
   {
     id: "1",
     title: "Morning 5K Run",
@@ -150,8 +218,8 @@ function getSuggestions(
   minutes: number,
   activities: Activity[]
 ): Record<Activity, number> {
-  const excess = Math.max(0, minutes - DAILY_LIMIT);
-  const perActivity = activities.length > 0 ? Math.ceil(excess / activities.length) : 0;
+  const excess = Math.max(0, minutes - ACTIVITY_THRESHOLD);
+  const perActivity = activities.length > 0 ? Math.ceil((excess * 1.5) / activities.length) : 0;
   const result = {} as Record<Activity, number>;
   for (const a of activities) result[a] = Math.max(5, Math.min(90, perActivity));
   return result;
@@ -310,7 +378,15 @@ function EventDetailSheet({
               </div>
               <div>
                 <p className="text-white/70 text-xs font-medium uppercase tracking-wide">
-                  {meta.label}
+                  {event.sponsored ? (
+                    <span className="flex items-center gap-1.5">
+                      <span>{meta.label}</span>
+                      <span className="opacity-50">·</span>
+                      <span className="opacity-80">{event.sponsored.brand}</span>
+                    </span>
+                  ) : (
+                    meta.label
+                  )}
                 </p>
                 <h2 className="text-white font-bold text-lg leading-tight mt-0.5">
                   {event.title}
@@ -361,6 +437,23 @@ function EventDetailSheet({
           <p className="text-[#a0a0b8] text-sm leading-relaxed">
             {event.description}
           </p>
+
+          {/* Sponsor section */}
+          {event.sponsored && (
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#606078]">
+                  Sponsored by {event.sponsored.brand}
+                </p>
+                <p className="text-white/70 text-xs mt-0.5 italic">
+                  "{event.sponsored.tagline}"
+                </p>
+              </div>
+              <button className="shrink-0 text-violet-400">
+                <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
 
           {/* Friends going from your crew */}
           {crewGoingFriends.length > 0 && (
@@ -435,6 +528,17 @@ function EventDetailSheet({
               </>
             )}
           </motion.button>
+
+          {/* Brand CTA for sponsored events */}
+          {event.sponsored && (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3.5 rounded-2xl font-medium text-sm flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-[#a0a0b8] hover:border-white/20 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
+              {event.sponsored.ctaLabel}
+            </motion.button>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -458,14 +562,23 @@ export default function Dashboard() {
   const simulateRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevOverLimitRef = useRef<boolean>(false);
+  const isSimulatingRef = useRef(false);
+  const simulateUsageFnRef = useRef<() => void>(() => {});
 
   // Total minutes logged across all activities (tap-to-add + real timer)
   const totalActivityDone = Object.values(completedActivities).reduce((s, v) => s + (v ?? 0), 0);
 
+  // One activity picked per day, rotating through selected activities
+  const dailyPickActivity = useMemo(() => {
+    if (selectedActivities.length === 0) return null;
+    const dayIndex = Math.floor(Date.now() / 86_400_000);
+    return selectedActivities[dayIndex % selectedActivities.length];
+  }, [selectedActivities]);
+
   // Social media time is always the raw truth — activity boosts the score instead
   const suggestions = getSuggestions(socialMediaMinutes, selectedActivities);
-  const overLimit = socialMediaMinutes > DAILY_LIMIT;
-  const excess = Math.max(0, socialMediaMinutes - DAILY_LIMIT);
+  const overLimit = socialMediaMinutes > ACTIVITY_THRESHOLD;
+  const excess = Math.max(0, socialMediaMinutes - ACTIVITY_THRESHOLD);
 
   // Activity compensates excess for scoring purposes only
   const effectiveExcess = Math.max(0, excess - totalActivityDone);
@@ -474,10 +587,10 @@ export default function Dashboard() {
   const isWinning = effectiveExcess <= 0;
 
   // Score reflects activity compensation — you scrolled, but you fought back
-  const overallScore = Math.max(0, 100 - Math.floor((effectiveExcess / DAILY_LIMIT) * 100));
+  const overallScore = Math.max(0, 100 - Math.floor((effectiveExcess / ACTIVITY_THRESHOLD) * 100));
 
   const notifyFriends = (minutes: number) => {
-    if (minutes > DAILY_LIMIT + 15 && selectedFriends.length > 0) {
+    if (minutes >= NOTIFY_THRESHOLD && selectedFriends.length > 0) {
       const friend = FRIENDS.find((f) => f.id === selectedFriends[0]);
       if (friend) {
         setToastFriends([friend.name]);
@@ -485,6 +598,9 @@ export default function Dashboard() {
       }
     }
   };
+
+  // Keep refs in sync so timeouts/intervals always call the latest version
+  isSimulatingRef.current = isSimulating;
 
   // Simulate social media usage
   const simulateUsage = () => {
@@ -496,15 +612,17 @@ export default function Dashboard() {
     setIsSimulating(true);
     let localMinutes = socialMediaMinutes;
     simulateRef.current = setInterval(() => {
-      localMinutes = Math.min(180, localMinutes + 1);
+      localMinutes = Math.min(100, localMinutes + 1);
       setSocialMediaMinutes(localMinutes);
       notifyFriends(localMinutes);
-      if (localMinutes >= 180) {
+      if (localMinutes >= 100) {
         setIsSimulating(false);
         clearInterval(simulateRef.current!);
       }
     }, 300);
   };
+
+  simulateUsageFnRef.current = simulateUsage;
 
   const resetUsage = () => {
     if (simulateRef.current) clearInterval(simulateRef.current);
@@ -541,6 +659,19 @@ export default function Dashboard() {
     }, 1000);
   };
 
+  // Scroll to top when dashboard mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  // Auto-start simulation after 1 minute if user hasn't started it manually
+  useEffect(() => {
+    const autoStart = setTimeout(() => {
+      if (!isSimulatingRef.current) simulateUsageFnRef.current();
+    }, 20_000);
+    return () => clearTimeout(autoStart);
+  }, []);
+
   // Fire winning toast when we cross from losing → winning (activity compensated the excess)
   useEffect(() => {
     if (!prevOverLimitRef.current && isWinning && totalActivityDone > 0 && selectedFriends.length > 0) {
@@ -556,9 +687,19 @@ export default function Dashboard() {
     };
   }, []);
 
-  const filteredEvents = MOCK_EVENTS.filter((e) =>
-    selectedActivities.includes(e.type)
-  );
+  // Pick one sponsored event at random (stable for this session) and show it
+  // at the top regardless of which activities the user selected.
+  const promotedEvent = useMemo(() => {
+    const sponsored = MOCK_EVENTS.filter((e) => e.sponsored);
+    return sponsored[Math.floor(Math.random() * sponsored.length)];
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    const regular = MOCK_EVENTS.filter(
+      (e) => !e.sponsored && selectedActivities.includes(e.type)
+    );
+    return promotedEvent ? [promotedEvent, ...regular] : regular;
+  }, [promotedEvent, selectedActivities]);
 
   return (
     <div className="min-h-dvh pb-12">
@@ -686,7 +827,7 @@ export default function Dashboard() {
               {totalActivityDone > 0 && (
                 <p className="text-emerald-400 text-xs">+{totalActivityDone}m activity logged</p>
               )}
-              <p className="text-[#606078] text-xs">Daily goal: {DAILY_LIMIT}m</p>
+              <p className="text-[#606078] text-xs">Daily goal: {ACTIVITY_THRESHOLD}m</p>
             </div>
           </div>
 
@@ -726,7 +867,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Unscroll! */}
-        {overLimit && selectedActivities.length > 0 && (
+        {selectedActivities.length > 0 && (overLimit || dailyPickActivity) && (
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -738,78 +879,112 @@ export default function Dashboard() {
                 Unscroll!
               </span>
             </SectionHeader>
+            {(() => {
+              const activitiesToShow = overLimit
+                ? selectedActivities
+                : dailyPickActivity ? [dailyPickActivity] : [];
+              return (
             <div
-              className={`grid gap-3 ${selectedActivities.length === 1 ? "grid-cols-1" : selectedActivities.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}
+              className={`grid gap-3 ${activitiesToShow.length === 1 ? "grid-cols-1" : activitiesToShow.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}
             >
-              {selectedActivities.map((activity) => {
+              {activitiesToShow.map((activity) => {
                 const meta = ACTIVITY_META[activity];
                 const Icon = meta.icon;
-                const suggested = suggestions[activity];
+                const suggested = overLimit
+                  ? suggestions[activity] + (activity === dailyPickActivity ? 15 : 0)
+                  : 15;
                 const done = completedActivities[activity] ?? 0;
                 const progress = Math.min(1, done / suggested);
                 const isActive = activeTimer === activity;
+                const isComplete = done >= suggested;
 
                 return (
                   <motion.div
                     key={activity}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() =>
+                    whileTap={{ scale: isComplete ? 1 : 0.97 }}
+                    onClick={() => {
+                      if (isComplete) return;
                       setCompletedActivities((prev) => ({
                         ...prev,
                         [activity]: (prev[activity] ?? 0) + 10,
-                      }))
-                    }
-                    className="bg-white/5 border border-white/8 rounded-3xl p-4 flex flex-col gap-3 cursor-pointer"
+                      }));
+                    }}
+                    className={`rounded-3xl p-4 flex flex-col gap-3 border transition-colors ${
+                      isComplete
+                        ? "bg-emerald-500/10 border-emerald-500/30 cursor-default"
+                        : "bg-white/5 border-white/8 cursor-pointer"
+                    }`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center`}
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                        isComplete
+                          ? "bg-emerald-500/20"
+                          : `bg-gradient-to-br ${meta.gradient}`
+                      }`}
                     >
-                      <Icon className="w-5 h-5 text-white" strokeWidth={1.5} />
+                      {isComplete ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" strokeWidth={1.5} />
+                      ) : (
+                        <Icon className="w-5 h-5 text-white" strokeWidth={1.5} />
+                      )}
                     </div>
                     <div>
                       <p className="font-semibold text-white text-sm">
                         {meta.label}
                       </p>
-                      <p className={`text-xs mt-0.5 ${meta.color}`}>
-                        {suggested}m suggested
+                      <p className={`text-xs mt-0.5 ${isComplete ? "text-emerald-400" : meta.color}`}>
+                        {isComplete ? `${done}m — goal reached!` : `${suggested}m suggested`}
                       </p>
                     </div>
 
-                    {/* Progress ring / bar */}
+                    {/* Progress bar */}
                     <div className="h-1.5 bg-white/8 rounded-full overflow-hidden">
                       <motion.div
                         animate={{ width: `${progress * 100}%` }}
-                        className={`h-full rounded-full bg-gradient-to-r ${meta.gradient}`}
+                        className={`h-full rounded-full ${
+                          isComplete
+                            ? "bg-emerald-400"
+                            : `bg-gradient-to-r ${meta.gradient}`
+                        }`}
                       />
                     </div>
                     <p className="text-[#606078] text-xs">{done}m done</p>
 
                     {/* Timer button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); startTimer(activity); }}
-                      className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition-all ${
-                        isActive
-                          ? `bg-gradient-to-r ${meta.gradient} text-white`
-                          : "bg-white/8 text-[#a0a0b8] hover:bg-white/12"
-                      }`}
-                    >
-                      {isActive ? (
-                        <>
-                          <Pause className="w-3 h-3" />
-                          {formatTime(timerSeconds)}
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3 h-3" />
-                          Start
-                        </>
-                      )}
-                    </button>
+                    {isComplete ? (
+                      <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium bg-emerald-500/15 text-emerald-400">
+                        <CheckCircle2 className="w-3 h-3" strokeWidth={2} />
+                        Complete!
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startTimer(activity); }}
+                        className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                          isActive
+                            ? `bg-gradient-to-r ${meta.gradient} text-white`
+                            : "bg-white/8 text-[#a0a0b8] hover:bg-white/12"
+                        }`}
+                      >
+                        {isActive ? (
+                          <>
+                            <Pause className="w-3 h-3" />
+                            {formatTime(timerSeconds)}
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3 h-3" />
+                            {done > 0 ? `${done}m · more` : "Start"}
+                          </>
+                        )}
+                      </button>
+                    )}
 
                   </motion.div>
                 );
               })}
             </div>
+              );
+            })()}
           </motion.div>
         )}
 
@@ -895,12 +1070,17 @@ export default function Dashboard() {
                 const crewCount = event.friendsGoing.filter((id) =>
                   selectedFriends.includes(id)
                 ).length;
+                const isSponsored = !!event.sponsored;
                 return (
                   <motion.div
                     key={event.id}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setSelectedEvent(event)}
-                    className="bg-white/5 border border-white/8 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-white/20 transition-colors"
+                    className={`rounded-2xl p-4 flex items-center gap-4 cursor-pointer transition-colors ${
+                      isSponsored
+                        ? "bg-white/8 border border-white/15 hover:border-white/25"
+                        : "bg-white/5 border border-white/8 hover:border-white/20"
+                    }`}
                   >
                     <div
                       className={`w-10 h-10 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center shrink-0`}
@@ -908,6 +1088,17 @@ export default function Dashboard() {
                       <Icon className="w-5 h-5 text-white" strokeWidth={1.5} />
                     </div>
                     <div className="flex-1 min-w-0">
+                      {isSponsored && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[10px] font-semibold tracking-widest uppercase text-[#606078]">
+                            Promoted
+                          </span>
+                          <span className="text-[#404058]">·</span>
+                          <span className="text-[10px] font-bold tracking-wide text-[#808098]">
+                            {event.sponsored!.brand}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-white text-sm truncate">
                           {event.title}
